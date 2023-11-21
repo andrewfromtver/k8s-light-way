@@ -10,9 +10,9 @@ this IaC setup keeps your host absolutely clean, all components for k8s deployme
 * k8s-master-node-1
 * k8s-master-node-2
 * k8s-worker-node-1
-* k8s-master-node-1
-* k8s-master-node-2
-* k8s-master-node-2
+* k8s-worker-node-2
+* k8s-worker-node-3
+* k8s-worker-node-4
 * ansible-controller-node
 
 # vagrant file vars
