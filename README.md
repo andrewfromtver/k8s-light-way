@@ -25,6 +25,6 @@ this IaC setup keeps your host absolutely clean, all components for k8s deployme
 * `WORKER_RAM = 4096`
 * `CONTROLLER_IP = "192.168.56.10"`
 * `MASTER_IP_ARRAY = ["192.168.56.11", "192.168.56.12"]`
-* `WORKER_IP_ARRAY = ["192.168.56.13", "192.168.56.14", "192.168.56.15"]`
+* `WORKER_IP_ARRAY = ["192.168.56.13", "192.168.56.14"]`
 
-***warn:*** if you want to increase qty of worker nodes, just add more IPv4 addresses in `WORKER_IP_ARRAY` but also change `declare -a IPS=(#{MASTER_IP_ARRAY[0]} #{MASTER_IP_ARRAY[1]} #{WORKER_IP_ARRAY[0]} #{WORKER_IP_ARRAY[1]} #{WORKER_IP_ARRAY[2]})` command in `# ansible controller node deploy` section of `Vagrant` file and add new IPv4 there to
+***warn:*** if you want to increase qty of worker nodes, just add more IPv4 addresses in `WORKER_IP_ARRAY` but also change `declare -a IPS=(#{MASTER_IP_ARRAY[0]} #{MASTER_IP_ARRAY[1]} #{WORKER_IP_ARRAY[0]} #{WORKER_IP_ARRAY[1]} #{WORKER_IP_ARRAY[2]} ...)` command in `# ansible controller node deploy` section of `Vagrant` file and add new IPv4 there to
