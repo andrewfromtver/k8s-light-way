@@ -2,8 +2,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-VM_BOX = "debian/bookworm64"
-VM_BOX_VERSION = "12.20231009.1"
+VM_BOX = "generic/debian12"
+VM_BOX_VERSION = "4.3.2"
 
 KUBESPRAY_TAG = "v2.23.1"
 
@@ -16,46 +16,21 @@ MASTER_RAM = 2048
 WORKER_CPU = 4
 WORKER_RAM = 4096
 
-CONTROLLER_IP = "192.168.56.10"
+CONTROLLER_IP = "10.10.0.10"
 
 MASTER_IP_ARRAY = [
-    "192.168.56.11", 
-    "192.168.56.12"
+  "10.10.0.11", 
+  "10.10.0.12"
 ]
 
 WORKER_IP_ARRAY = [
-    "192.168.56.13", 
-    "192.168.56.14"
+  "10.10.0.13", 
+  "10.10.0.14"
 ]
 
 Vagrant.configure(2) do |config|
     # disable ssh keys change on boot
     config.ssh.insert_key = false
-    
-    # k8s master deploy loop
-    $master_count = MASTER_IP_ARRAY.length()
-    (1..$master_count).each do |i|
-      config.vm.define "k8s-master-#{i}" do |master|
-        master.vm.box = VM_BOX
-        master.vm.box_version = VM_BOX_VERSION
-        master.vm.provider "virtualbox" do |v|
-          v.name = "k8s master #{i}"
-          v.memory = MASTER_RAM
-          v.cpus = MASTER_CPU
-        end
-        master.vm.hostname = "master#{i}"
-        master.vm.network "private_network", ip: MASTER_IP_ARRAY[i - 1]
-        master.vm.provision "shell", run: 'once', inline: <<-SHELL
-          echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-        SHELL
-        master.trigger.after :up do
-          master.vm.provision "shell", run: 'always', inline: <<-SHELL
-            swapoff -a
-            uptime
-          SHELL
-        end
-      end
-    end
 
     # k8s worker deploy loop
     $worker_count = WORKER_IP_ARRAY.length()
@@ -63,8 +38,9 @@ Vagrant.configure(2) do |config|
       config.vm.define "k8s-worker-#{i}" do |worker|
         worker.vm.box = VM_BOX
         worker.vm.box_version = VM_BOX_VERSION
-        worker.vm.provider "virtualbox" do |v|
-          v.name = "k8s worker #{i}"
+        worker.vm.provider "vmware_desktop" do |v|
+          v.gui = false
+          v.vmx['displayname'] = "k8s worker #{i}"
           v.memory = WORKER_RAM
           v.cpus = WORKER_CPU
         end
@@ -73,12 +49,26 @@ Vagrant.configure(2) do |config|
         worker.vm.provision "shell", run: 'once', inline: <<-SHELL
           echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
         SHELL
-        worker.trigger.after :up do
-          worker.vm.provision "shell", run: 'always', inline: <<-SHELL
-            swapoff -a
-            uptime
-          SHELL
+      end
+    end
+
+    # k8s master deploy loop
+    $master_count = MASTER_IP_ARRAY.length()
+    (1..$master_count).each do |i|
+      config.vm.define "k8s-master-#{i}" do |master|
+        master.vm.box = VM_BOX
+        master.vm.box_version = VM_BOX_VERSION
+        master.vm.provider "vmware_desktop" do |v|
+          v.gui = false
+          v.vmx['displayname'] = "k8s master #{i}"
+          v.memory = MASTER_RAM
+          v.cpus = MASTER_CPU
         end
+        master.vm.hostname = "master#{i}"
+        master.vm.network "private_network", ip: MASTER_IP_ARRAY[i - 1]
+        master.vm.provision "shell", run: 'once', inline: <<-SHELL
+          echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+        SHELL
       end
     end
 
@@ -87,8 +77,9 @@ Vagrant.configure(2) do |config|
       controller.vm.box = VM_BOX
       controller.vm.box_version = VM_BOX_VERSION
       controller.vm.hostname = "controller"
-      controller.vm.provider "virtualbox" do |v|
-        v.name = "controller"
+      controller.vm.provider "vmware_desktop" do |v|
+        v.gui = false
+        v.vmx['displayname'] = "controller"
         v.memory = CONTROLLER_RAM
         v.cpus = CONTROLLER_CPU
       end
@@ -98,8 +89,8 @@ Vagrant.configure(2) do |config|
         cp /shared/id_rsa /root/.ssh/id_rsa
         cp /shared/id_rsa.pub /root/.ssh/id_rsa.pub
         sudo chmod 600 /root/.ssh/id_rsa
-        sudo apt-get update
-        sudo apt-get install python3 python3-pip python3-venv git -y
+        sudo apt-get update || sudo dnf update
+        sudo apt-get install python3 python3-pip python3-venv git -y || sudo dnf install python3 python3-pip python3-venv git -y
         python3 -m venv env
         source env/bin/activate
         git clone https://github.com/kubernetes-sigs/kubespray
@@ -116,10 +107,12 @@ Vagrant.configure(2) do |config|
         ansible-playbook -i inventory/k8s/hosts.yaml -u vagrant --become --become-user=root cluster.yml
         deactivate
       SHELL
-      controller.trigger.after :up do
-        controller.vm.provision "shell", run: 'always', inline: <<-SHELL
-          uptime
-        SHELL
-      end
+      controller.vm.provision "shell", run: 'always', inline: <<-SHELL
+        python3 -m venv env
+        source env/bin/activate
+        cd kubespray
+        cat inventory/k8s/hosts.yaml
+        deactivate
+      SHELL
     end
 end
