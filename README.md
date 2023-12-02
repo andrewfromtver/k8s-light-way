@@ -14,6 +14,8 @@ this IaC setup keeps your host absolutely clean, all components for k8s deployme
 * ansible-controller-node
 
 # vagrant file vars
+* `PROVIDER = "virtualbox"`
+* `PROVIDER_GUI = true`
 * `VM_BOX = "debian/bookworm64"`
 * `VM_BOX_VERSION = "12.20231009.1"`
 * `KUBESPRAY_TAG = "v2.23.1"`
